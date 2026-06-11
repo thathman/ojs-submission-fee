@@ -1,0 +1,55 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: submissionFee\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "plugins.generic.submissionFee.displayName"
+msgstr "Submission Fee"
+
+msgid "plugins.generic.submissionFee.description"
+msgstr "Charges a fee at submission time, collected via the journal's configured payment method."
+
+msgid "plugins.generic.submissionFee.settings.enabled"
+msgstr "Enable the submission fee for this journal"
+
+msgid "plugins.generic.submissionFee.settings.amount"
+msgstr "Fee amount"
+
+msgid "plugins.generic.submissionFee.settings.amount.invalid"
+msgstr "The fee amount must be a number greater than zero."
+
+msgid "plugins.generic.submissionFee.settings.currency"
+msgstr "Currency code (e.g. NGN, USD)"
+
+msgid "plugins.generic.submissionFee.settings.mode"
+msgstr "Enforcement"
+
+msgid "plugins.generic.submissionFee.settings.mode.hardBlock"
+msgstr "Hard block: author cannot complete the submission until the fee is paid"
+
+msgid "plugins.generic.submissionFee.settings.mode.holdUntilPaid"
+msgstr "Hold until paid: submission completes but is flagged for the editor until the fee is paid"
+
+msgid "plugins.generic.submissionFee.error.unpaid"
+msgstr "A submission fee is required before you can complete this submission. Please pay here: {$url}"
+
+msgid "plugins.generic.submissionFee.outstanding"
+msgstr "Submission fee outstanding"
+
+msgid "plugins.generic.submissionFee.notice.title"
+msgstr "Submission fee"
+
+msgid "plugins.generic.submissionFee.notice.amount"
+msgstr "A fee of {$amount} {$currency} applies to this submission."
+
+msgid "plugins.generic.submissionFee.notice.bodyHardBlock"
+msgstr "Payment is required before you can complete this submission. Use the button below to pay; you can return here and submit once payment is confirmed."
+
+msgid "plugins.generic.submissionFee.notice.bodyHoldUntilPaid"
+msgstr "You can complete this submission now, but it will be held for editorial processing until this fee is paid. You may pay now using the button below."
+
+msgid "plugins.generic.submissionFee.notice.payNow"
+msgstr "Pay submission fee"

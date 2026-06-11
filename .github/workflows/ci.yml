@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint & locale coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: PHP syntax check
+        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 -P4 php -l
+
+      - name: Locale key coverage
+        run: |
+          used=$(grep -rhoE "plugins\.generic\.submissionFee\.[A-Za-z.]+" --include=*.php --include=*.tpl . | sort -u)
+          def=$(grep -oE "plugins\.generic\.submissionFee\.[A-Za-z.]+" locale/en/locale.po | sort -u)
+          missing=$(comm -23 <(echo "$used") <(echo "$def"))
+          if [ -n "$missing" ]; then
+            echo "::error::Locale keys used in code but missing from locale.po:"
+            echo "$missing"
+            exit 1
+          fi
+          echo "All locale keys are defined."
