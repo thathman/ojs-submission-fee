@@ -13,6 +13,7 @@
 namespace APP\plugins\generic\submissionFee;
 
 use APP\core\Application;
+use APP\template\TemplateManager;
 use PKP\form\Form;
 use PKP\form\validation\FormValidatorCSRF;
 use PKP\form\validation\FormValidatorCustom;
@@ -39,7 +40,7 @@ class SettingsForm extends Form
     public function initData()
     {
         $contextId = Application::get()->getRequest()->getContext()->getId();
-        $this->setData('enabled', (bool) $this->plugin->getSetting($contextId, 'enabled'));
+        $this->setData('feeEnabled', (bool) $this->plugin->getSetting($contextId, 'feeEnabled'));
         $this->setData('amount', $this->plugin->getSetting($contextId, 'amount'));
         $this->setData('currency', $this->plugin->getSetting($contextId, 'currency'));
         $this->setData('mode', $this->plugin->getSetting($contextId, 'mode') ?: 'hardBlock');
@@ -48,13 +49,27 @@ class SettingsForm extends Form
 
     public function readInputData()
     {
-        $this->readUserVars(['enabled', 'amount', 'currency', 'mode']);
+        $this->readUserVars(['feeEnabled', 'amount', 'currency', 'mode']);
+    }
+
+    /**
+     * @copydoc Form::fetch()
+     *
+     * @param null|mixed $template
+     */
+    public function fetch($request, $template = null, $display = false): string
+    {
+        $templateMgr = TemplateManager::getManager($request);
+        $templateMgr->assign('pluginName', $this->plugin->getName());
+        return parent::fetch($request, $template, $display);
     }
 
     public function execute(...$functionArgs)
     {
         $contextId = Application::get()->getRequest()->getContext()->getId();
-        $this->plugin->updateSetting($contextId, 'enabled', (bool) $this->getData('enabled'), 'bool');
+        // NB: the fee toggle must NOT be stored as 'enabled' — GenericPlugin
+        // uses that setting name for the plugin-enabled flag itself.
+        $this->plugin->updateSetting($contextId, 'feeEnabled', (bool) $this->getData('feeEnabled'), 'bool');
         $this->plugin->updateSetting($contextId, 'amount', (float) $this->getData('amount'), 'string');
         $this->plugin->updateSetting($contextId, 'currency', trim((string) $this->getData('currency')), 'string');
         $mode = in_array($this->getData('mode'), ['hardBlock', 'holdUntilPaid']) ? $this->getData('mode') : 'hardBlock';

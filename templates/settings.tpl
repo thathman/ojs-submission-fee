@@ -17,7 +17,7 @@
 	{fbvFormArea id="submissionFeeArea"}
 
 		{fbvFormSection list=true}
-			{fbvElement type="checkbox" id="enabled" label="plugins.generic.submissionFee.settings.enabled" checked=$enabled}
+			{fbvElement type="checkbox" id="feeEnabled" label="plugins.generic.submissionFee.settings.enabled" checked=$feeEnabled}
 		{/fbvFormSection}
 
 		{fbvFormSection title="plugins.generic.submissionFee.settings.amount"}

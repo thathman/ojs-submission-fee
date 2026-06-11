@@ -19,9 +19,13 @@ use APP\facades\Repo;
 use APP\handler\Handler;
 use APP\plugins\generic\submissionFee\PaymentHelper;
 use APP\plugins\generic\submissionFee\SubmissionFeePlugin;
+use APP\template\TemplateManager;
+use PKP\core\PKPApplication;
 use PKP\core\Registry;
 use PKP\security\authorization\ContextRequiredPolicy;
+use PKP\security\Role;
 use PKP\security\Validation;
+use PKP\stageAssignment\StageAssignment;
 
 class PaymentHandler extends Handler
 {
@@ -48,9 +52,16 @@ class PaymentHandler extends Handler
             $request->redirect(null, 'dashboard');
         }
 
-        // Only the submitter may pay.
+        // Only a participant on the submission (the author gets a stage
+        // assignment when the wizard starts) or a journal manager/site admin
+        // may pay. NB: submissions have no 'submitterId' field in OJS 3.5.
         $user = $request->getUser();
-        if ($submission->getData('submitterId') != $user->getId()) {
+        $isParticipant = StageAssignment::withSubmissionIds([$submission->getId()])
+            ->withUserId($user->getId())
+            ->exists();
+        $isManager = $user->hasRole([Role::ROLE_ID_MANAGER], $context->getId())
+            || $user->hasRole([Role::ROLE_ID_SITE_ADMIN], PKPApplication::SITE_CONTEXT_ID);
+        if (!$isParticipant && !$isManager) {
             error_log(sprintf(
                 '[SubmissionFee] Unauthorized payment access attempt by user ID %d for submission ID %d',
                 $user->getId(),
@@ -74,9 +85,19 @@ class PaymentHandler extends Handler
         $paymentManager = Application::get()->getPaymentManager($context);
         $queuedPayment = $paymentManager->getQueuedPayment($queuedPaymentId);
 
-        // displayPaymentForm() dispatches to whichever paymethod plugin is
-        // configured for the journal (your Paystack/Flutterwave plugin).
-        $paymentManager->displayPaymentForm($queuedPaymentId, $queuedPayment, $request);
+        // getPaymentForm() dispatches to whichever paymethod plugin is
+        // configured for the journal; false when none is configured.
+        $paymentForm = $paymentManager->getPaymentForm($queuedPayment);
+        if (!$paymentForm) {
+            $templateMgr = TemplateManager::getManager($request);
+            $templateMgr->assign([
+                'pageTitle' => 'common.payment',
+                'message' => 'payment.notFound',
+            ]);
+            $templateMgr->display('frontend/pages/message.tpl');
+            return;
+        }
+        $paymentForm->display($request);
     }
 
     private function returnUrl($request, $submission): string

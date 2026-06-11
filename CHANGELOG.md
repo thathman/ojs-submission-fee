@@ -3,6 +3,30 @@
 All notable changes to `submissionFee` are documented in this file.
 This project adheres to OJS plugin versioning (`major.minor.revision.build`).
 
+## [1.1.2.0] - 2026-06-11
+
+### Fixed
+- **Settings page crashed (HTTP 500).** `settings.tpl` lived at the plugin
+  root, but OJS only registers a plugin's Smarty template resource when a
+  `templates/` directory exists — so opening the settings modal threw
+  `Smarty: Unknown resource type 'plugins-…-submissionFee'`. The template now
+  lives in `templates/settings.tpl`.
+- **Fee toggle collided with the plugin-enabled flag.** The "enable the
+  submission fee" checkbox was stored as the setting `enabled`, the same
+  setting name `GenericPlugin` uses to track whether the plugin itself is
+  enabled — saving the form with the box unchecked silently disabled the whole
+  plugin. The toggle is now stored as `feeEnabled`. (If you had previously set
+  the old toggle, simply re-save the settings form once.)
+- **Save URL was broken.** The settings form template uses `$pluginName` to
+  build its save URL, but the form never assigned it; `fetch()` now assigns it
+  (same pattern as core plugins).
+- **Pay page rejected the actual author.** The handler authorized via
+  `$submission->getData('submitterId')`, but submissions carry no such field
+  in OJS 3.5 — it was always null, so every user (including the author) was
+  bounced to the dashboard. Authorization now checks for a stage assignment
+  on the submission (authors receive one when the wizard starts) or a journal
+  manager / site admin role.
+
 ## [1.1.1.0] - 2026-06-11
 
 ### Fixed

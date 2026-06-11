@@ -16,6 +16,7 @@ use APP\core\Application;
 use APP\submission\Submission;
 use PKP\context\Context;
 use PKP\db\DAORegistry;
+use PKP\payment\QueuedPayment;
 
 class PaymentHelper
 {
@@ -28,7 +29,9 @@ class PaymentHelper
 
     public function feeEnabled(Context $context): bool
     {
-        return (bool) $this->plugin->getSetting($context->getId(), 'enabled')
+        // 'feeEnabled', not 'enabled': GenericPlugin reserves 'enabled' for
+        // the plugin-enabled flag itself.
+        return (bool) $this->plugin->getSetting($context->getId(), 'feeEnabled')
             && (float) $this->plugin->getSetting($context->getId(), 'amount') > 0;
     }
 
@@ -71,17 +74,32 @@ class PaymentHelper
         $request = Application::get()->getRequest();
         $paymentManager = Application::get()->getPaymentManager($context);
 
-        $userId = $submission->getData('submitterId')
-            ?? ($request->getUser() ? $request->getUser()->getId() : null);
+        // Submissions carry no 'submitterId' in OJS 3.5; the payer is the
+        // logged-in user (the handler has already authorized them).
+        $userId = $request->getUser() ? $request->getUser()->getId() : null;
 
-        $queued = $paymentManager->createQueuedPayment(
-            $request,
-            SubmissionFeePlugin::PAYMENT_TYPE_SUBMISSION,
-            $userId,
-            $submission->getId(),
+        // Build the QueuedPayment directly: OJSPaymentManager::createQueuedPayment()
+        // treats PAYMENT_TYPE_SUBMISSION as deprecated (no return URL, logs an
+        // "Invalid payment type" error) even though fulfillQueuedPayment()
+        // still completes it correctly.
+        $queued = new QueuedPayment(
             $this->amount($context),
-            $this->currency($context)
+            $this->currency($context),
+            $userId,
+            $submission->getId()
         );
+        $queued->setContextId($context->getId());
+        $queued->setType(SubmissionFeePlugin::PAYMENT_TYPE_SUBMISSION);
+        // After payment, return the author to the submission wizard.
+        $queued->setRequestUrl($request->getDispatcher()->url(
+            $request,
+            Application::ROUTE_PAGE,
+            $context->getPath(),
+            'submission',
+            null,
+            null,
+            ['id' => $submission->getId()]
+        ));
 
         return $paymentManager->queuePayment($queued);
     }
