@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file classes/PaymentHelper.php
+ * @file PaymentHelper.php
  *
  * Copyright (c) 2026 Hendrix Nwaokolo, Airix Media
  * Website: https://ojs.airixmedia.com

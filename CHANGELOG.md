@@ -3,6 +3,17 @@
 All notable changes to `submissionFee` are documented in this file.
 This project adheres to OJS plugin versioning (`major.minor.revision.build`).
 
+## [1.1.1.0] - 2026-06-11
+
+### Fixed
+- **Crash on enable.** `PaymentHelper` and `SettingsForm` declared the root
+  namespace `APP\plugins\generic\submissionFee` but lived in `classes/`, so their
+  fully-qualified class names did not match their path and could not be
+  autoloaded — `new PaymentHelper()` / `new SettingsForm()` would fatal the
+  moment the plugin was enabled and an author reached submission. Moved both
+  files to the plugin root so the namespace matches the path. Caught by a live
+  OJS-bootstrap integration test.
+
 ## [1.1.0.0] - 2026-06-11
 
 ### Added
