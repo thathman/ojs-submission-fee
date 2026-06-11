@@ -3,6 +3,26 @@
 All notable changes to `submissionFee` are documented in this file.
 This project adheres to OJS plugin versioning (`major.minor.revision.build`).
 
+## [1.3.0.0] - 2026-06-11
+
+### Added
+- **Per-step placement.** The single placement radio is now a set of
+  checkboxes: show the fee banner on any combination of wizard steps
+  (Details, Upload Files, Contributors, For the Editors, Reviewer
+  Suggestions, Review). The wizard clones hook output into every step, so
+  the injected script filters visibility client-side and dedupes within a
+  step. The legacy `noticePlacement` setting is honoured until re-saved.
+- **Dedicated "Payment" wizard step.** Optional own step spliced into the
+  wizard just before Review (steps state + a `SubmissionFeeStep` Vue
+  component registered before the app boots). Shown only while the fee is
+  outstanding.
+- **"Begin a Submission" notice.** Optional informational notice (fee
+  title, amount, message — no button, since no submission exists yet) under
+  the heading of the start page.
+- **Confirmation-page notice.** Optional notice with Pay button + popup
+  polling on the submission-complete page — the natural surface for
+  hold-until-paid journals.
+
 ## [1.2.0.0] - 2026-06-11
 
 ### Fixed

@@ -34,9 +34,18 @@
 		{/fbvFormSection}
 
 		{fbvFormSection label="plugins.generic.submissionFee.settings.noticePlacement" list=true}
-			{fbvElement type="radio" id="noticePlacement-review" name="noticePlacement" value="review" checked=$noticePlacement|compare:"review" label="plugins.generic.submissionFee.settings.noticePlacement.review"}
-			{fbvElement type="radio" id="noticePlacement-everyStep" name="noticePlacement" value="everyStep" checked=$noticePlacement|compare:"everyStep" label="plugins.generic.submissionFee.settings.noticePlacement.everyStep"}
-			{fbvElement type="radio" id="noticePlacement-reviewAndSteps" name="noticePlacement" value="reviewAndSteps" checked=$noticePlacement|compare:"reviewAndSteps" label="plugins.generic.submissionFee.settings.noticePlacement.reviewAndSteps"}
+			{fbvElement type="checkbox" id="noticeSteps-details" name="noticeSteps[]" value="details" checked="details"|in_array:$noticeSteps label="plugins.generic.submissionFee.settings.steps.details"}
+			{fbvElement type="checkbox" id="noticeSteps-files" name="noticeSteps[]" value="files" checked="files"|in_array:$noticeSteps label="plugins.generic.submissionFee.settings.steps.files"}
+			{fbvElement type="checkbox" id="noticeSteps-contributors" name="noticeSteps[]" value="contributors" checked="contributors"|in_array:$noticeSteps label="plugins.generic.submissionFee.settings.steps.contributors"}
+			{fbvElement type="checkbox" id="noticeSteps-editors" name="noticeSteps[]" value="editors" checked="editors"|in_array:$noticeSteps label="plugins.generic.submissionFee.settings.steps.editors"}
+			{fbvElement type="checkbox" id="noticeSteps-reviewerSuggestions" name="noticeSteps[]" value="reviewerSuggestions" checked="reviewerSuggestions"|in_array:$noticeSteps label="plugins.generic.submissionFee.settings.steps.reviewerSuggestions"}
+			{fbvElement type="checkbox" id="noticeSteps-review" name="noticeSteps[]" value="review" checked="review"|in_array:$noticeSteps label="plugins.generic.submissionFee.settings.steps.review"}
+		{/fbvFormSection}
+
+		{fbvFormSection label="plugins.generic.submissionFee.settings.otherSurfaces" list=true}
+			{fbvElement type="checkbox" id="ownStep" label="plugins.generic.submissionFee.settings.ownStep" checked=$ownStep}
+			{fbvElement type="checkbox" id="showOnStart" label="plugins.generic.submissionFee.settings.showOnStart" checked=$showOnStart}
+			{fbvElement type="checkbox" id="showOnComplete" label="plugins.generic.submissionFee.settings.showOnComplete" checked=$showOnComplete}
 		{/fbvFormSection}
 
 		{fbvFormSection title="plugins.generic.submissionFee.settings.noticeTitle"}

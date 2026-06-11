@@ -58,16 +58,40 @@ msgid "plugins.generic.submissionFee.notice.paid"
 msgstr "Payment received — thank you. You may now continue with your submission."
 
 msgid "plugins.generic.submissionFee.settings.noticePlacement"
-msgstr "Notice placement"
+msgstr "Show the fee notice on these wizard steps"
 
-msgid "plugins.generic.submissionFee.settings.noticePlacement.review"
-msgstr "Review (final) step of the submission wizard"
+msgid "plugins.generic.submissionFee.settings.steps.details"
+msgstr "Details"
 
-msgid "plugins.generic.submissionFee.settings.noticePlacement.everyStep"
-msgstr "Every step of the submission wizard"
+msgid "plugins.generic.submissionFee.settings.steps.files"
+msgstr "Upload Files"
 
-msgid "plugins.generic.submissionFee.settings.noticePlacement.reviewAndSteps"
-msgstr "Every step, including Review"
+msgid "plugins.generic.submissionFee.settings.steps.contributors"
+msgstr "Contributors"
+
+msgid "plugins.generic.submissionFee.settings.steps.editors"
+msgstr "For the Editors"
+
+msgid "plugins.generic.submissionFee.settings.steps.reviewerSuggestions"
+msgstr "Reviewer Suggestions (when enabled)"
+
+msgid "plugins.generic.submissionFee.settings.steps.review"
+msgstr "Review (final step)"
+
+msgid "plugins.generic.submissionFee.settings.otherSurfaces"
+msgstr "Also show the fee"
+
+msgid "plugins.generic.submissionFee.settings.ownStep"
+msgstr "As its own \"Payment\" step in the wizard, just before Review"
+
+msgid "plugins.generic.submissionFee.settings.showOnStart"
+msgstr "On the \"Begin a Submission\" page (informational, before the wizard)"
+
+msgid "plugins.generic.submissionFee.settings.showOnComplete"
+msgstr "On the submission-complete (confirmation) page, with a Pay button"
+
+msgid "plugins.generic.submissionFee.step.name"
+msgstr "Payment"
 
 msgid "plugins.generic.submissionFee.settings.noticeTitle"
 msgstr "Notice title (leave blank for the default)"

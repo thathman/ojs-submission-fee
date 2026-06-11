@@ -62,16 +62,17 @@ class SubmissionFeePlugin extends GenericPlugin
         Hook::add('Submission::validateSubmit', [$this, 'checkPaymentOnSubmit']);
 
         // --- AUTHOR-FACING NOTICE: surface the fee + a pay button inside the
-        // submission wizard. Placement is a journal setting: the Review step
-        // (native Template::SubmissionWizard::Section::Review hook) and/or
-        // every wizard step (Template::SubmissionWizard::Section). Both are
-        // documented hooks — no Vue build, no theme edits, upgrade-safe. ---
-        Hook::add('Template::SubmissionWizard::Section::Review', [$this, 'addReviewStepNotice']);
-        Hook::add('Template::SubmissionWizard::Section', [$this, 'addEveryStepNotice']);
+        // submission wizard. The Template::SubmissionWizard::Section hook
+        // output lands inside the wizard's client-side v-for, so Vue clones it
+        // into every step section; the injected script then shows it only on
+        // the steps the journal selected (and dedupes within a step). ---
+        Hook::add('Template::SubmissionWizard::Section', [$this, 'addWizardSectionNotice']);
 
-        // Inject the popup + status-polling script on the wizard page (outside
-        // the Vue root, via an output filter, so Vue cannot strip it).
-        Hook::add('TemplateManager::display', [$this, 'injectWizardScript']);
+        // Wizard page: inject the popup/polling/step-filter script (output
+        // filter, outside the Vue root so Vue cannot strip it), splice in the
+        // dedicated Payment step when enabled, and add notices to the
+        // "Begin a Submission" and submission-complete pages.
+        Hook::add('TemplateManager::display', [$this, 'handlePageDisplay']);
 
         // Register the SUBMISSION_FEE_REQUIRED mailable (editable under
         // Settings > Emails).
@@ -130,39 +131,25 @@ class SubmissionFeePlugin extends GenericPlugin
     }
 
     /**
-     * Review-step placement. Fires on Template::SubmissionWizard::Section::Review
-     * ([&$params, $smarty, &$output]); the Review step iterates server-side
-     * over its sub-sections, so a static guard renders the notice exactly once.
+     * Wizard banner. Template::SubmissionWizard::Section fires once during the
+     * Smarty render, but its output sits inside the wizard's client-side
+     * v-for, so Vue clones it into every step section. The data-sf-show
+     * attribute tells the injected script which steps may show it; a static
+     * guard keeps the server-side output single.
      */
-    public function addReviewStepNotice(string $hookName, array $args): bool
+    public function addWizardSectionNotice(string $hookName, array $args): bool
     {
-        if (!in_array($this->getNoticePlacement(), ['review', 'reviewAndSteps'], true)) {
+        $steps = $this->getNoticeSteps();
+        if (!$steps) {
             return Hook::CONTINUE;
         }
         static $rendered = false;
         if ($rendered) {
             return Hook::CONTINUE;
         }
-        $notice = $this->buildNotice($args[0]['submission'] ?? null);
+        $notice = $this->buildNotice($args[0]['submission'] ?? null, implode(',', $steps));
         if ($notice !== '') {
             $rendered = true;
-            $args[2] .= $notice;
-        }
-        return Hook::CONTINUE;
-    }
-
-    /**
-     * Every-step placement. Template::SubmissionWizard::Section fires once per
-     * wizard step panel, so rendering on each call shows the notice in every
-     * step (no guard wanted here).
-     */
-    public function addEveryStepNotice(string $hookName, array $args): bool
-    {
-        if (!in_array($this->getNoticePlacement(), ['everyStep', 'reviewAndSteps'], true)) {
-            return Hook::CONTINUE;
-        }
-        $notice = $this->buildNotice($args[0]['submission'] ?? null);
-        if ($notice !== '') {
             $args[2] .= $notice;
         }
         return Hook::CONTINUE;
@@ -172,8 +159,13 @@ class SubmissionFeePlugin extends GenericPlugin
      * Build the fee-notice HTML for a submission, or '' when no notice is due.
      * Title and body texts are journal-editable settings with locale defaults.
      * Output is plain, Vue-safe static HTML (no {{ }} bindings, no <script>).
+     *
+     * @param mixed  $submission Submission object
+     * @param string $stepsAttr  Comma-separated wizard step ids this notice may
+     *                           show on (data-sf-show, filtered client-side);
+     *                           '' renders it unconditionally.
      */
-    protected function buildNotice($submission): string
+    protected function buildNotice($submission, string $stepsAttr = ''): string
     {
         $context = Application::get()->getRequest()->getContext();
         if (!$submission || !$context) {
@@ -222,8 +214,9 @@ class SubmissionFeePlugin extends GenericPlugin
 
         // Inline styles keep this theme-agnostic on any 3.5 install. The
         // data-sf-pay attributes are picked up by the delegated click handler
-        // injected via injectWizardScript() (popup + status polling).
+        // injected via handlePageDisplay() (popup + status polling).
         return '<div class="submissionFeeNotice" role="note"'
+            . ($stepsAttr !== '' ? ' data-sf-show="' . htmlspecialchars($stepsAttr, ENT_QUOTES) . '"' : '')
             . ' style="margin:1rem 0;padding:1rem 1.25rem;border:1px solid #e0a800;'
             . 'border-left-width:4px;border-radius:4px;background:#fff8e6;">'
             . '<h3 style="margin:0 0 .25rem;font-size:1rem;color:#8a6d00;">' . $title . '</h3>'
@@ -240,20 +233,185 @@ class SubmissionFeePlugin extends GenericPlugin
     }
 
     /**
-     * On the submission wizard page, register an output filter that appends
-     * the popup + polling script before </body> — outside the Vue root, so
-     * Vue's template compiler cannot strip it.
+     * TemplateManager::display dispatcher for the submission pages:
+     * - wizard.tpl:   inject popup/polling/step-filter script; splice in the
+     *                 dedicated Payment step when enabled.
+     * - start.tpl:    informational fee notice on "Begin a Submission".
+     * - complete.tpl: fee notice + Pay button on the confirmation page.
      */
-    public function injectWizardScript(string $hookName, array $args): bool
+    public function handlePageDisplay(string $hookName, array $args): bool
     {
         $template = (string) ($args[1] ?? '');
-        if ($template !== 'submission/wizard.tpl') {
-            return Hook::CONTINUE;
-        }
         /** @var TemplateManager $templateMgr */
         $templateMgr = $args[0];
-        $templateMgr->registerFilter('output', [$this, 'appendWizardScript']);
+
+        switch ($template) {
+            case 'submission/wizard.tpl':
+                $templateMgr->registerFilter('output', [$this, 'appendWizardScript']);
+                $this->maybeAddPaymentStep($templateMgr);
+                break;
+            case 'submission/start.tpl':
+                if ($this->getSetting($this->currentContextId(), 'showOnStart')) {
+                    $templateMgr->registerFilter('output', [$this, 'appendStartNotice']);
+                }
+                break;
+            case 'submission/complete.tpl':
+                if ($this->getSetting($this->currentContextId(), 'showOnComplete')) {
+                    $templateMgr->registerFilter('output', [$this, 'appendCompleteNotice']);
+                    $templateMgr->registerFilter('output', [$this, 'appendWizardScript']);
+                }
+                break;
+        }
         return Hook::CONTINUE;
+    }
+
+    /** Current context id or null (helper for setting reads in hooks). */
+    protected function currentContextId(): ?int
+    {
+        $context = Application::get()->getRequest()->getContext();
+        return $context ? $context->getId() : null;
+    }
+
+    /**
+     * When the dedicated-step option is on and the fee is outstanding, splice
+     * a "Payment" step into the wizard's steps state just before Review. The
+     * step's section uses the wizard's generic component branch
+     * (section.component), rendered by the SubmissionFeeStep component the
+     * injected script registers before the Vue app boots.
+     */
+    protected function maybeAddPaymentStep(TemplateManager $templateMgr): void
+    {
+        $context = Application::get()->getRequest()->getContext();
+        if (!$context || !$this->getSetting($context->getId(), 'ownStep')) {
+            return;
+        }
+
+        $submission = $templateMgr->getTemplateVars('submission');
+        if (!$submission) {
+            return;
+        }
+        $helper = new PaymentHelper($this);
+        if (!$helper->feeEnabled($context) || $helper->hasPaid($submission, $context)) {
+            return;
+        }
+
+        $steps = $templateMgr->getState('steps');
+        if (!is_array($steps) || !count($steps)) {
+            return;
+        }
+
+        $paymentStep = [
+            'id' => 'submissionFeePayment',
+            'name' => (string) __('plugins.generic.submissionFee.step.name'),
+            'reviewName' => '',
+            'reviewTemplate' => '',
+            'sections' => [
+                [
+                    'id' => 'submissionFeeNoticeSection',
+                    'name' => $helper->noticeText($context, 'noticeTitle', 'plugins.generic.submissionFee.notice.title'),
+                    'description' => '',
+                    'type' => '',
+                    'component' => 'SubmissionFeeStep',
+                    'props' => [
+                        'noticeHtml' => $this->buildNotice($submission),
+                    ],
+                ],
+            ],
+        ];
+
+        // Insert before the Review step (id 'review'); append as fallback.
+        $reviewIndex = null;
+        foreach ($steps as $i => $step) {
+            if (($step['id'] ?? '') === 'review') {
+                $reviewIndex = $i;
+                break;
+            }
+        }
+        if ($reviewIndex === null) {
+            $steps[] = $paymentStep;
+        } else {
+            array_splice($steps, $reviewIndex, 0, [$paymentStep]);
+        }
+        $templateMgr->setState(['steps' => $steps]);
+    }
+
+    /** Output filter: informational notice on the "Begin a Submission" page. */
+    public function appendStartNotice(string $output, $templateMgr): string
+    {
+        $context = Application::get()->getRequest()->getContext();
+        if (!$context || str_contains($output, 'submissionFeeStartNotice')) {
+            return $output;
+        }
+        $helper = new PaymentHelper($this);
+        if (!$helper->feeEnabled($context)) {
+            return $output;
+        }
+
+        $title = htmlspecialchars(
+            $helper->noticeText($context, 'noticeTitle', 'plugins.generic.submissionFee.notice.title'),
+            ENT_QUOTES
+        );
+        $amountLine = htmlspecialchars(
+            (string) __('plugins.generic.submissionFee.notice.amount', [
+                'amount' => $helper->formattedAmount($context),
+                'currency' => $helper->currency($context),
+            ]),
+            ENT_QUOTES
+        );
+        $isHardBlock = $this->getMode($context->getId()) === 'hardBlock';
+        $body = htmlspecialchars(
+            $helper->noticeText(
+                $context,
+                $isHardBlock ? 'noticeBodyHardBlock' : 'noticeBodyHoldUntilPaid',
+                $isHardBlock
+                    ? 'plugins.generic.submissionFee.notice.bodyHardBlock'
+                    : 'plugins.generic.submissionFee.notice.bodyHoldUntilPaid'
+            ),
+            ENT_QUOTES
+        );
+
+        $notice = '<div class="submissionFeeNotice submissionFeeStartNotice" role="note"'
+            . ' style="margin:1rem auto;max-width:50rem;padding:1rem 1.25rem;border:1px solid #e0a800;'
+            . 'border-left-width:4px;border-radius:4px;background:#fff8e6;">'
+            . '<h2 style="margin:0 0 .25rem;font-size:1rem;color:#8a6d00;">' . $title . '</h2>'
+            . '<p style="margin:0 0 .5rem;"><strong>' . $amountLine . '</strong></p>'
+            . '<p style="margin:0;">' . $body . '</p>'
+            . '</div>';
+
+        // Place it directly under the page heading.
+        $pos = strpos($output, '</h1>');
+        if ($pos !== false) {
+            return substr_replace($output, '</h1>' . $notice, $pos, strlen('</h1>'));
+        }
+        return $output;
+    }
+
+    /** Output filter: fee notice + Pay button on the submission-complete page. */
+    public function appendCompleteNotice(string $output, $templateMgr): string
+    {
+        $request = Application::get()->getRequest();
+        $context = $request->getContext();
+        if (!$context || str_contains($output, 'submissionFeeNotice')) {
+            return $output;
+        }
+        $submissionId = (int) $request->getUserVar('id');
+        $submission = $submissionId ? Repo::submission()->get($submissionId) : null;
+        if (!$submission || $submission->getData('contextId') != $context->getId()) {
+            return $output;
+        }
+
+        $notice = $this->buildNotice($submission);
+        if ($notice === '') {
+            return $output;
+        }
+        // Constrain to the page's content width.
+        $notice = '<div style="max-width:50rem;margin:0 auto;">' . $notice . '</div>';
+
+        $pos = strpos($output, '</h1>');
+        if ($pos !== false) {
+            return substr_replace($output, '</h1>' . $notice, $pos, strlen('</h1>'));
+        }
+        return $output;
     }
 
     /** Output filter: add the pay-popup/polling script before </body>. */
@@ -266,6 +424,48 @@ class SubmissionFeePlugin extends GenericPlugin
 <script>
 (function () {
     if (window.sfPayPopupInit) { return; } window.sfPayPopupInit = true;
+
+    // Register the dedicated Payment step's component before the Vue app
+    // boots (used when the "own step" placement is enabled).
+    if (window.pkp && pkp.registry && pkp.modules && pkp.modules.vue) {
+        pkp.registry.registerComponent('SubmissionFeeStep', {
+            props: { noticeHtml: { type: String, default: '' } },
+            render: function () {
+                return pkp.modules.vue.h('div', {
+                    class: 'submissionFeeStep',
+                    innerHTML: this.noticeHtml
+                });
+            }
+        });
+    }
+
+    // The wizard banner is cloned by Vue into every step section. Show it
+    // only on the steps listed in data-sf-show, and at most once per step.
+    var SF_STEP_IDS = ['details', 'files', 'contributors', 'editors', 'reviewerSuggestions', 'review', 'submissionFeePayment'];
+    function sfStepIdFor(node) {
+        var el = node.parentElement;
+        while (el) {
+            if (el.id && SF_STEP_IDS.indexOf(el.id) !== -1) { return el.id; }
+            el = el.parentElement;
+        }
+        return null;
+    }
+    function sfFilterNotices() {
+        var seenSteps = {};
+        document.querySelectorAll('.submissionFeeNotice[data-sf-show]').forEach(function (n) {
+            var allowed = n.getAttribute('data-sf-show').split(',');
+            var stepId = sfStepIdFor(n);
+            var show = !stepId || allowed.indexOf(stepId) !== -1;
+            if (show && stepId) {
+                if (seenSteps[stepId]) { show = false; } // dedupe within a step
+                else { seenSteps[stepId] = true; }
+            }
+            n.style.display = show ? '' : 'none';
+        });
+    }
+    sfFilterNotices();
+    setInterval(sfFilterNotices, 800);
+
     document.addEventListener('click', function (e) {
         var a = e.target && e.target.closest ? e.target.closest('a[data-sf-pay]') : null;
         if (!a) { return; }
@@ -391,12 +591,29 @@ JS;
         return $this->getSetting($contextId, 'mode') ?: 'hardBlock';
     }
 
-    /** Where the wizard notice renders: review | everyStep | reviewAndSteps. */
-    public function getNoticePlacement(): string
+    /** Wizard step ids the journal can target with the banner notice. */
+    public const WIZARD_STEPS = ['details', 'files', 'contributors', 'editors', 'reviewerSuggestions', 'review'];
+
+    /**
+     * The wizard steps the banner notice may show on. Reads the noticeSteps
+     * setting (comma-separated step ids); falls back to the legacy
+     * noticePlacement setting, defaulting to the Review step.
+     */
+    public function getNoticeSteps(): array
     {
-        $context = Application::get()->getRequest()->getContext();
-        $placement = $context ? (string) $this->getSetting($context->getId(), 'noticePlacement') : '';
-        return in_array($placement, ['review', 'everyStep', 'reviewAndSteps'], true) ? $placement : 'review';
+        $contextId = $this->currentContextId();
+        if ($contextId === null) {
+            return [];
+        }
+        $raw = trim((string) $this->getSetting($contextId, 'noticeSteps'));
+        if ($raw !== '') {
+            return array_values(array_intersect(explode(',', $raw), self::WIZARD_STEPS));
+        }
+        // Back-compat with the 1.2.0.0 noticePlacement setting.
+        return match ((string) $this->getSetting($contextId, 'noticePlacement')) {
+            'everyStep', 'reviewAndSteps' => self::WIZARD_STEPS,
+            default => ['review'],
+        };
     }
 
     // ---- Plugin metadata --------------------------------------------------

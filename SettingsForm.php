@@ -44,7 +44,10 @@ class SettingsForm extends Form
         $this->setData('amount', $this->plugin->getSetting($contextId, 'amount'));
         $this->setData('currency', $this->plugin->getSetting($contextId, 'currency'));
         $this->setData('mode', $this->plugin->getSetting($contextId, 'mode') ?: 'hardBlock');
-        $this->setData('noticePlacement', $this->plugin->getSetting($contextId, 'noticePlacement') ?: 'review');
+        $this->setData('noticeSteps', $this->plugin->getNoticeSteps());
+        $this->setData('ownStep', (bool) $this->plugin->getSetting($contextId, 'ownStep'));
+        $this->setData('showOnStart', (bool) $this->plugin->getSetting($contextId, 'showOnStart'));
+        $this->setData('showOnComplete', (bool) $this->plugin->getSetting($contextId, 'showOnComplete'));
         $this->setData('noticeTitle', $this->plugin->getSetting($contextId, 'noticeTitle'));
         $this->setData('noticeBodyHardBlock', $this->plugin->getSetting($contextId, 'noticeBodyHardBlock'));
         $this->setData('noticeBodyHoldUntilPaid', $this->plugin->getSetting($contextId, 'noticeBodyHoldUntilPaid'));
@@ -55,7 +58,8 @@ class SettingsForm extends Form
     {
         $this->readUserVars([
             'feeEnabled', 'amount', 'currency', 'mode',
-            'noticePlacement', 'noticeTitle', 'noticeBodyHardBlock', 'noticeBodyHoldUntilPaid',
+            'noticeSteps', 'ownStep', 'showOnStart', 'showOnComplete',
+            'noticeTitle', 'noticeBodyHardBlock', 'noticeBodyHoldUntilPaid',
         ]);
     }
 
@@ -81,9 +85,12 @@ class SettingsForm extends Form
         $this->plugin->updateSetting($contextId, 'currency', trim((string) $this->getData('currency')), 'string');
         $mode = in_array($this->getData('mode'), ['hardBlock', 'holdUntilPaid']) ? $this->getData('mode') : 'hardBlock';
         $this->plugin->updateSetting($contextId, 'mode', $mode, 'string');
-        $placement = in_array($this->getData('noticePlacement'), ['review', 'everyStep', 'reviewAndSteps'])
-            ? $this->getData('noticePlacement') : 'review';
-        $this->plugin->updateSetting($contextId, 'noticePlacement', $placement, 'string');
+        $steps = (array) $this->getData('noticeSteps');
+        $steps = array_values(array_intersect($steps, SubmissionFeePlugin::WIZARD_STEPS));
+        $this->plugin->updateSetting($contextId, 'noticeSteps', implode(',', $steps), 'string');
+        $this->plugin->updateSetting($contextId, 'ownStep', (bool) $this->getData('ownStep'), 'bool');
+        $this->plugin->updateSetting($contextId, 'showOnStart', (bool) $this->getData('showOnStart'), 'bool');
+        $this->plugin->updateSetting($contextId, 'showOnComplete', (bool) $this->getData('showOnComplete'), 'bool');
         $this->plugin->updateSetting($contextId, 'noticeTitle', trim((string) $this->getData('noticeTitle')), 'string');
         $this->plugin->updateSetting($contextId, 'noticeBodyHardBlock', trim((string) $this->getData('noticeBodyHardBlock')), 'string');
         $this->plugin->updateSetting($contextId, 'noticeBodyHoldUntilPaid', trim((string) $this->getData('noticeBodyHoldUntilPaid')), 'string');
