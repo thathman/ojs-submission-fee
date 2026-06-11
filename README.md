@@ -108,3 +108,13 @@ Following the [PKP plugin release guide](https://docs.pkp.sfu.ca/dev/plugin-guid
 
 The archive must contain a single top-level `submissionFee/` directory so OJS's
 **Upload A New Plugin** installer places it correctly.
+
+## Screenshots
+
+| | |
+| --- | --- |
+| Settings | ![Plugin settings](docs/screenshots/settings-modal.png) |
+| Wizard banner | ![Fee notice in the submission wizard](docs/screenshots/wizard-banner.png) |
+| Dedicated Payment step | ![Dedicated Payment step before Review](docs/screenshots/wizard-payment-step.png) |
+| Step list | ![Payment as step 6 of 7](docs/screenshots/wizard-step-list.png) |
+| Confirmation page | ![Fee notice on the submission-complete page](docs/screenshots/confirmation-notice.png) |
