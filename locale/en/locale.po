@@ -53,3 +53,51 @@ msgstr "You can complete this submission now, but it will be held for editorial 
 
 msgid "plugins.generic.submissionFee.notice.payNow"
 msgstr "Pay submission fee"
+
+msgid "plugins.generic.submissionFee.notice.paid"
+msgstr "Payment received — thank you. You may now continue with your submission."
+
+msgid "plugins.generic.submissionFee.settings.noticePlacement"
+msgstr "Notice placement"
+
+msgid "plugins.generic.submissionFee.settings.noticePlacement.review"
+msgstr "Review (final) step of the submission wizard"
+
+msgid "plugins.generic.submissionFee.settings.noticePlacement.everyStep"
+msgstr "Every step of the submission wizard"
+
+msgid "plugins.generic.submissionFee.settings.noticePlacement.reviewAndSteps"
+msgstr "Every step, including Review"
+
+msgid "plugins.generic.submissionFee.settings.noticeTitle"
+msgstr "Notice title (leave blank for the default)"
+
+msgid "plugins.generic.submissionFee.settings.noticeBodyHardBlock"
+msgstr "Notice message — hard-block mode (leave blank for the default)"
+
+msgid "plugins.generic.submissionFee.settings.noticeBodyHoldUntilPaid"
+msgstr "Notice message — hold-until-paid mode (leave blank for the default)"
+
+msgid "mailable.submissionFeeRequired.name"
+msgstr "Submission Fee Required"
+
+msgid "mailable.submissionFeeRequired.description"
+msgstr "Sent to the submitting author when their submission is received with the submission fee still outstanding."
+
+msgid "emails.submissionFeeRequired.subject"
+msgstr "Submission fee required for your submission"
+
+msgid "emails.submissionFeeRequired.body"
+msgstr "<p>Dear {$recipientName},</p><p>Thank you for your submission, \"{$submissionTitle}\". A submission fee of <strong>{$submissionFeeAmount} {$submissionFeeCurrency}</strong> applies and is still outstanding. Your submission will be held for editorial processing until the fee is paid.</p><p><a href=\"{$submissionFeePayUrl}\">Pay the submission fee</a></p><p>{$journalSignature}</p>"
+
+msgid "plugins.generic.submissionFee.emailVar.submissionTitle"
+msgstr "The title of the submission."
+
+msgid "plugins.generic.submissionFee.emailVar.amount"
+msgstr "The submission fee amount."
+
+msgid "plugins.generic.submissionFee.emailVar.currency"
+msgstr "The submission fee currency code."
+
+msgid "plugins.generic.submissionFee.emailVar.payUrl"
+msgstr "The URL where the author can pay the submission fee."

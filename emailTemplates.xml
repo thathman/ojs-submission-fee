@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE emails SYSTEM "../../../lib/pkp/dtd/emailTemplates.dtd">
+<!--
+  * plugins/generic/submissionFee/emailTemplates.xml
+  *
+  * Copyright (c) 2026 Hendrix Nwaokolo, Airix Media
+  * Website: https://ojs.airixmedia.com
+  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
+  *
+  * Email templates for the Submission Fee plugin.
+  -->
+<emails>
+	<email key="SUBMISSION_FEE_REQUIRED" name="mailable.submissionFeeRequired.name" subject="emails.submissionFeeRequired.subject" body="emails.submissionFeeRequired.body" description="mailable.submissionFeeRequired.description" />
+</emails>

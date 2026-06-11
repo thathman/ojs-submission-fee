@@ -58,12 +58,24 @@ class PaymentHelper
     {
         /** @var \APP\payment\ojs\OJSCompletedPaymentDAO $dao */
         $dao = DAORegistry::getDAO('OJSCompletedPaymentDAO');
+        // NB: getByAssoc()'s first parameter is a USER id filter, not a context
+        // id — pass null to match the payment regardless of who paid.
         $payment = $dao->getByAssoc(
-            $context->getId(),
+            null,
             SubmissionFeePlugin::PAYMENT_TYPE_SUBMISSION,
             $submission->getId()
         );
         return (bool) $payment;
+    }
+
+    /**
+     * Resolve a notice text setting, falling back to the locale default when
+     * the journal has not customised it.
+     */
+    public function noticeText(Context $context, string $settingName, string $localeKey, array $localeParams = []): string
+    {
+        $custom = trim((string) $this->plugin->getSetting($context->getId(), $settingName));
+        return $custom !== '' ? $custom : (string) __($localeKey, $localeParams);
     }
 
     /**

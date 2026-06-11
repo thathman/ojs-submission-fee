@@ -3,6 +3,40 @@
 All notable changes to `submissionFee` are documented in this file.
 This project adheres to OJS plugin versioning (`major.minor.revision.build`).
 
+## [1.2.0.0] - 2026-06-11
+
+### Fixed
+- **Payments never registered (critical).** `hasPaid()` passed the journal ID
+  as the first argument of `OJSCompletedPaymentDAO::getByAssoc()`, which is a
+  *user ID* filter — so completed payments were invisible, the wizard notice
+  never cleared, hard-block never lifted, and authors could be charged
+  repeatedly. The lookup now matches the payment regardless of payer.
+
+### Added
+- **Popup payment with live status polling.** The Pay button now opens the
+  gateway in a popup; the wizard polls a new JSON endpoint
+  (`/submissionFee/status/{submissionId}`) every 4 s, and the moment the
+  payment lands the notice flips to a green "payment received" state and the
+  popup closes — no more stale wizard tab. (Falls back to a new tab when the
+  popup is blocked; polling continues ~30 s after the popup closes to absorb
+  the callback race.)
+- **Notice placement setting.** Journals choose where the notice renders:
+  Review (final) step (default), every wizard step, or both.
+- **Editable notice text.** Title and both mode-specific messages can be
+  customised in the plugin settings; blank fields fall back to the locale
+  defaults.
+- **`SUBMISSION_FEE_REQUIRED` mailable.** Sent to the submitting author when a
+  submission completes with the fee outstanding (hold-until-paid mode);
+  editable under Settings → Workflow → Emails, with `{$submissionTitle}`,
+  `{$submissionFeeAmount}`, `{$submissionFeeCurrency}` and
+  `{$submissionFeePayUrl}` variables.
+- The hold-until-paid listener now skips queueing when the fee is disabled or
+  already paid.
+
+### Changed
+- Payment status is also surfaced in the workflow **Payment** tab via the
+  paymethodSupport plugin (editors get a Paid/Waived/Unpaid switcher there).
+
 ## [1.1.2.0] - 2026-06-11
 
 ### Fixed

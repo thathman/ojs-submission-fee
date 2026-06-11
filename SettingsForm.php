@@ -44,12 +44,19 @@ class SettingsForm extends Form
         $this->setData('amount', $this->plugin->getSetting($contextId, 'amount'));
         $this->setData('currency', $this->plugin->getSetting($contextId, 'currency'));
         $this->setData('mode', $this->plugin->getSetting($contextId, 'mode') ?: 'hardBlock');
+        $this->setData('noticePlacement', $this->plugin->getSetting($contextId, 'noticePlacement') ?: 'review');
+        $this->setData('noticeTitle', $this->plugin->getSetting($contextId, 'noticeTitle'));
+        $this->setData('noticeBodyHardBlock', $this->plugin->getSetting($contextId, 'noticeBodyHardBlock'));
+        $this->setData('noticeBodyHoldUntilPaid', $this->plugin->getSetting($contextId, 'noticeBodyHoldUntilPaid'));
         parent::initData();
     }
 
     public function readInputData()
     {
-        $this->readUserVars(['feeEnabled', 'amount', 'currency', 'mode']);
+        $this->readUserVars([
+            'feeEnabled', 'amount', 'currency', 'mode',
+            'noticePlacement', 'noticeTitle', 'noticeBodyHardBlock', 'noticeBodyHoldUntilPaid',
+        ]);
     }
 
     /**
@@ -74,6 +81,12 @@ class SettingsForm extends Form
         $this->plugin->updateSetting($contextId, 'currency', trim((string) $this->getData('currency')), 'string');
         $mode = in_array($this->getData('mode'), ['hardBlock', 'holdUntilPaid']) ? $this->getData('mode') : 'hardBlock';
         $this->plugin->updateSetting($contextId, 'mode', $mode, 'string');
+        $placement = in_array($this->getData('noticePlacement'), ['review', 'everyStep', 'reviewAndSteps'])
+            ? $this->getData('noticePlacement') : 'review';
+        $this->plugin->updateSetting($contextId, 'noticePlacement', $placement, 'string');
+        $this->plugin->updateSetting($contextId, 'noticeTitle', trim((string) $this->getData('noticeTitle')), 'string');
+        $this->plugin->updateSetting($contextId, 'noticeBodyHardBlock', trim((string) $this->getData('noticeBodyHardBlock')), 'string');
+        $this->plugin->updateSetting($contextId, 'noticeBodyHoldUntilPaid', trim((string) $this->getData('noticeBodyHoldUntilPaid')), 'string');
         return parent::execute(...$functionArgs);
     }
 }

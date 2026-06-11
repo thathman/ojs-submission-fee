@@ -36,6 +36,38 @@ class PaymentHandler extends Handler
     }
 
     /**
+     * JSON payment status for a submission's fee, polled by the wizard notice
+     * while the payment popup is open.
+     * Route: /<journal>/submissionFee/status/{submissionId}
+     */
+    public function status($args, $request)
+    {
+        $context = $request->getContext();
+        $submissionId = (int) ($args[0] ?? 0);
+        $submission = $submissionId ? Repo::submission()->get($submissionId) : null;
+
+        header('Content-Type: application/json; charset=utf-8');
+        if (!Validation::isLoggedIn()
+            || !$submission
+            || $submission->getData('contextId') != $context->getId()
+            || !$this->userMayAccess($request, $submission, $context)
+        ) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Access denied']);
+            exit;
+        }
+
+        /** @var SubmissionFeePlugin $plugin */
+        $plugin = Registry::get('plugin');
+        $helper = new PaymentHelper($plugin);
+        echo json_encode([
+            'required' => $helper->feeEnabled($context),
+            'paid' => $helper->hasPaid($submission, $context),
+        ]);
+        exit;
+    }
+
+    /**
      * Start payment for a submission's fee.
      */
     public function pay($args, $request)
@@ -56,12 +88,7 @@ class PaymentHandler extends Handler
         // assignment when the wizard starts) or a journal manager/site admin
         // may pay. NB: submissions have no 'submitterId' field in OJS 3.5.
         $user = $request->getUser();
-        $isParticipant = StageAssignment::withSubmissionIds([$submission->getId()])
-            ->withUserId($user->getId())
-            ->exists();
-        $isManager = $user->hasRole([Role::ROLE_ID_MANAGER], $context->getId())
-            || $user->hasRole([Role::ROLE_ID_SITE_ADMIN], PKPApplication::SITE_CONTEXT_ID);
-        if (!$isParticipant && !$isManager) {
+        if (!$this->userMayAccess($request, $submission, $context)) {
             error_log(sprintf(
                 '[SubmissionFee] Unauthorized payment access attempt by user ID %d for submission ID %d',
                 $user->getId(),
@@ -98,6 +125,24 @@ class PaymentHandler extends Handler
             return;
         }
         $paymentForm->display($request);
+    }
+
+    /**
+     * True when the current user holds a stage assignment on the submission
+     * or is a journal manager / site admin.
+     */
+    private function userMayAccess($request, $submission, $context): bool
+    {
+        $user = $request->getUser();
+        if (!$user) {
+            return false;
+        }
+        $isParticipant = StageAssignment::withSubmissionIds([$submission->getId()])
+            ->withUserId($user->getId())
+            ->exists();
+        return $isParticipant
+            || $user->hasRole([Role::ROLE_ID_MANAGER], $context->getId())
+            || $user->hasRole([Role::ROLE_ID_SITE_ADMIN], PKPApplication::SITE_CONTEXT_ID);
     }
 
     private function returnUrl($request, $submission): string
