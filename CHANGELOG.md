@@ -3,6 +3,27 @@
 All notable changes to `submissionFee` are documented in this file.
 This project adheres to OJS plugin versioning (`major.minor.revision.build`).
 
+## [1.3.1.0] - 2026-06-11
+
+Versioning note: from this release the scheme is
+`MajorFeature.MinorFeature/Upgrade.MajorBug.MinorBug`.
+
+### Fixed
+Both found by driving the real wizard in a headless browser:
+- **Dedicated Payment step rendered empty.** The `SubmissionFeeStep` Vue
+  component was registered at the end of `<body>` — after
+  `pkp.registry.init()` boots the app — so Vue silently failed to resolve
+  it. Registration now goes through the backend scripts block with
+  `STYLE_SEQUENCE_LAST` priority: after `build.js` defines `pkp.registry`,
+  before the app boots.
+- **Per-step filtering never matched.** Wizard step panels (`.pkpStep`)
+  carry no id attribute, so the filter could not tell which step a notice
+  clone belonged to and showed all of them (duplicate notices, wrong
+  steps). The plugin now publishes the final step order
+  (`window.sfWizardSteps`) and the filter maps each notice to its step by
+  DOM index. Verified: banner shows only on selected steps, once per step,
+  and the Payment step shows a single notice.
+
 ## [1.3.0.0] - 2026-06-11
 
 ### Added

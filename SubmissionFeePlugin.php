@@ -249,6 +249,18 @@ class SubmissionFeePlugin extends GenericPlugin
             case 'submission/wizard.tpl':
                 $templateMgr->registerFilter('output', [$this, 'appendWizardScript']);
                 $this->maybeAddPaymentStep($templateMgr);
+                // Publish the final step order: wizard step panels (.pkpStep)
+                // carry no id attribute, so the client-side filter maps a
+                // notice to its step by DOM index using this list.
+                $stepIds = array_map(
+                    fn ($step) => (string) ($step['id'] ?? ''),
+                    is_array($templateMgr->getState('steps')) ? $templateMgr->getState('steps') : []
+                );
+                $templateMgr->addJavaScript(
+                    'submissionFeeStepOrder',
+                    'window.sfWizardSteps = ' . json_encode($stepIds) . ';',
+                    ['inline' => true, 'contexts' => 'backend']
+                );
                 break;
             case 'submission/start.tpl':
                 if ($this->getSetting($this->currentContextId(), 'showOnStart')) {
@@ -299,6 +311,21 @@ class SubmissionFeePlugin extends GenericPlugin
         if (!is_array($steps) || !count($steps)) {
             return;
         }
+
+        // Register the step's Vue component in the backend scripts block,
+        // which executes BEFORE pkp.registry.init() boots the app — a
+        // component registered after boot is never resolved.
+        $templateMgr->addJavaScript(
+            'submissionFeeStepComponent',
+            'if (window.pkp && pkp.registry && pkp.modules && pkp.modules.vue) {'
+            . 'pkp.registry.registerComponent("SubmissionFeeStep", {'
+            . 'props: { noticeHtml: { type: String, default: "" } },'
+            . 'render: function () { return pkp.modules.vue.h("div", { class: "submissionFeeStep", innerHTML: this.noticeHtml }); }'
+            . '});}',
+            // STYLE_SEQUENCE_LAST places this after build.js (which defines
+            // pkp.registry) but before the body's pkp.registry.init() call.
+            ['inline' => true, 'contexts' => 'backend', 'priority' => TemplateManager::STYLE_SEQUENCE_LAST]
+        );
 
         $paymentStep = [
             'id' => 'submissionFeePayment',
@@ -425,30 +452,19 @@ class SubmissionFeePlugin extends GenericPlugin
 (function () {
     if (window.sfPayPopupInit) { return; } window.sfPayPopupInit = true;
 
-    // Register the dedicated Payment step's component before the Vue app
-    // boots (used when the "own step" placement is enabled).
-    if (window.pkp && pkp.registry && pkp.modules && pkp.modules.vue) {
-        pkp.registry.registerComponent('SubmissionFeeStep', {
-            props: { noticeHtml: { type: String, default: '' } },
-            render: function () {
-                return pkp.modules.vue.h('div', {
-                    class: 'submissionFeeStep',
-                    innerHTML: this.noticeHtml
-                });
-            }
-        });
-    }
+    // (The dedicated Payment step's Vue component is registered separately in
+    // the backend scripts block, before pkp.registry.init() boots the app.)
 
-    // The wizard banner is cloned by Vue into every step section. Show it
-    // only on the steps listed in data-sf-show, and at most once per step.
-    var SF_STEP_IDS = ['details', 'files', 'contributors', 'editors', 'reviewerSuggestions', 'review', 'submissionFeePayment'];
+    // The wizard banner is cloned by Vue into every step section. Step panels
+    // (.pkpStep) carry no id, so map each notice to its step by DOM index
+    // against the server-published step order (window.sfWizardSteps), then
+    // show it only on the steps listed in data-sf-show, at most once per step.
     function sfStepIdFor(node) {
-        var el = node.parentElement;
-        while (el) {
-            if (el.id && SF_STEP_IDS.indexOf(el.id) !== -1) { return el.id; }
-            el = el.parentElement;
-        }
-        return null;
+        var stepEl = node.closest ? node.closest('.pkpStep') : null;
+        if (!stepEl || !window.sfWizardSteps) { return null; }
+        var all = Array.prototype.slice.call(document.querySelectorAll('.pkpStep'));
+        var idx = all.indexOf(stepEl);
+        return idx === -1 ? null : (window.sfWizardSteps[idx] || null);
     }
     function sfFilterNotices() {
         var seenSteps = {};
