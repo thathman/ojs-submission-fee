@@ -111,10 +111,29 @@ The archive must contain a single top-level `submissionFee/` directory so OJS's
 
 ## Screenshots
 
+### Configuration
+
+![Plugin settings](docs/screenshots/settings.png)
+
+### Author journey
+
+| Surface | |
+| --- | --- |
+| "Begin a Submission" page | ![Fee notice before the wizard](docs/screenshots/begin-submission-notice.png) |
+| Wizard — Details step banner | ![Fee banner on the Details step](docs/screenshots/wizard-details-step.png) |
+| Wizard — dedicated Payment step | ![Dedicated Payment step before Review](docs/screenshots/wizard-payment-step.png) |
+| Wizard — Review step | ![Fee notice on the Review step](docs/screenshots/wizard-review-step.png) |
+
+### Payment flow (popup)
+
 | | |
 | --- | --- |
-| Settings | ![Plugin settings](docs/screenshots/settings-modal.png) |
-| Wizard banner | ![Fee notice in the submission wizard](docs/screenshots/wizard-banner.png) |
-| Dedicated Payment step | ![Dedicated Payment step before Review](docs/screenshots/wizard-payment-step.png) |
-| Step list | ![Payment as step 6 of 7](docs/screenshots/wizard-step-list.png) |
-| Confirmation page | ![Fee notice on the submission-complete page](docs/screenshots/confirmation-notice.png) |
+| Payment details | ![Payment details page](docs/screenshots/payment-details-page.png) |
+| Gateway checkout (Paystack test) | ![Paystack checkout in the popup](docs/screenshots/paystack-checkout-popup.png) |
+| Gateway confirmation | ![Payment successful](docs/screenshots/paystack-payment-success.png) |
+| Receipt | ![Payment receipt](docs/screenshots/payment-receipt.png) |
+| Wizard updates live | ![Payment received — the wizard notice turns green without a reload](docs/screenshots/wizard-payment-received.png) |
+
+### After payment
+
+![Author's workflow Payment tab showing the submission fee as Paid](docs/screenshots/workflow-payment-tab-author.png)
