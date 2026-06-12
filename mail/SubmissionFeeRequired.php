@@ -15,6 +15,8 @@
 namespace APP\plugins\generic\submissionFee\mail;
 
 use APP\plugins\generic\submissionFee\PaymentHelper;
+use APP\submission\Submission;
+use PKP\context\Context;
 use PKP\mail\Mailable;
 use PKP\mail\traits\Configurable;
 use PKP\mail\traits\Recipient;
@@ -33,7 +35,10 @@ class SubmissionFeeRequired extends Mailable
     protected static array $fromRoleIds = [self::FROM_SYSTEM];
     protected static array $toRoleIds = [Role::ROLE_ID_AUTHOR];
 
-    public function __construct($context, $submission, PaymentHelper $helper)
+    // NB: every constructor parameter MUST be type-hinted — the Emails
+    // settings page reflects mailable constructors to derive template
+    // variables and throws on untyped parameters.
+    public function __construct(Context $context, Submission $submission, PaymentHelper $helper)
     {
         parent::__construct([$context, $submission]);
 
