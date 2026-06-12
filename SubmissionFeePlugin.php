@@ -54,6 +54,24 @@ class SubmissionFeePlugin extends GenericPlugin
             return true;
         }
 
+        // Self-heal the email templates: a plugin copied into place (rather
+        // than installed through the gallery) never gets its
+        // emailTemplates.xml loaded, so the SUBMISSION_FEE_REQUIRED mailable
+        // has no default subject/body and nothing is sent. Install once,
+        // guarded by a plugin setting.
+        $this->maybeInstallEmailTemplates($mainContextId);
+
+        // Register the fee-outstanding flag on the submission schema —
+        // setData() on unknown properties is silently dropped on save.
+        Hook::add('Schema::get::submission', function (string $hookName, array $args) {
+            $args[0]->properties->submissionFeeOutstanding = (object) [
+                'type' => 'boolean',
+                'apiSummary' => false,
+                'validation' => ['nullable'],
+            ];
+            return Hook::CONTINUE;
+        });
+
         // --- Author pay-now page handler (queues payment, redirects to gateway) ---
         Hook::add('LoadHandler', [$this, 'setupPaymentHandler']);
 
@@ -194,8 +212,8 @@ class SubmissionFeePlugin extends GenericPlugin
         );
         $amountLine = htmlspecialchars(
             (string) __('plugins.generic.submissionFee.notice.amount', [
-                'amount' => $helper->formattedAmount($context),
-                'currency' => $helper->currency($context),
+                'amount' => $helper->displayAmount($context),
+                'currency' => '',
             ]),
             ENT_QUOTES
         );
@@ -380,8 +398,8 @@ class SubmissionFeePlugin extends GenericPlugin
         );
         $amountLine = htmlspecialchars(
             (string) __('plugins.generic.submissionFee.notice.amount', [
-                'amount' => $helper->formattedAmount($context),
-                'currency' => $helper->currency($context),
+                'amount' => $helper->displayAmount($context),
+                'currency' => '',
             ]),
             ENT_QUOTES
         );
@@ -536,6 +554,32 @@ JS;
     public function getInstallEmailTemplatesFile()
     {
         return $this->getPluginPath() . '/emailTemplates.xml';
+    }
+
+    /**
+     * Install the default email template data once per site (idempotent;
+     * skipExisting protects journal customisations on re-runs).
+     */
+    protected function maybeInstallEmailTemplates(?int $contextId): void
+    {
+        try {
+            // plugin_settings.context_id has an FK to journals, so the flag
+            // must be journal-scoped; without a context, defer to a request
+            // that has one.
+            $contextId = $contextId ?? $this->currentContextId();
+            if (!$contextId || $this->getSetting($contextId, 'emailTemplatesInstalled')) {
+                return;
+            }
+            Repo::emailTemplate()->dao->installEmailTemplates(
+                $this->getInstallEmailTemplatesFile(),
+                [],
+                null,
+                true
+            );
+            $this->updateSetting($contextId, 'emailTemplatesInstalled', '1');
+        } catch (\Throwable $e) {
+            error_log('[SubmissionFee] email template install failed: ' . $e->getMessage());
+        }
     }
 
     /**

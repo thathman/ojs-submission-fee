@@ -43,7 +43,7 @@ msgid "plugins.generic.submissionFee.notice.title"
 msgstr "Submission fee"
 
 msgid "plugins.generic.submissionFee.notice.amount"
-msgstr "A fee of {$amount} {$currency} applies to this submission."
+msgstr "A fee of {$amount} applies to this submission."
 
 msgid "plugins.generic.submissionFee.notice.bodyHardBlock"
 msgstr "Payment is required before you can complete this submission. Use the button below to pay; you can return here and submit once payment is confirmed."
@@ -112,13 +112,13 @@ msgid "emails.submissionFeeRequired.subject"
 msgstr "Submission fee required for your submission"
 
 msgid "emails.submissionFeeRequired.body"
-msgstr "<p>Dear {$recipientName},</p><p>Thank you for your submission, \"{$submissionTitle}\". A submission fee of <strong>{$submissionFeeAmount} {$submissionFeeCurrency}</strong> applies and is still outstanding. Your submission will be held for editorial processing until the fee is paid.</p><p><a href=\"{$submissionFeePayUrl}\">Pay the submission fee</a></p><p>{$journalSignature}</p>"
+msgstr "<p>Dear {$recipientName},</p><p>Thank you for your submission, \"{$submissionTitle}\". A submission fee of <strong>{$submissionFeeAmount}</strong> applies and is still outstanding. Your submission will be held for editorial processing until the fee is paid.</p><p><a href=\"{$submissionFeePayUrl}\">Pay the submission fee</a></p><p>{$journalSignature}</p>"
 
 msgid "plugins.generic.submissionFee.emailVar.submissionTitle"
 msgstr "The title of the submission."
 
 msgid "plugins.generic.submissionFee.emailVar.amount"
-msgstr "The submission fee amount."
+msgstr "The submission fee amount, formatted with its currency symbol (e.g. ₦10,000)."
 
 msgid "plugins.generic.submissionFee.emailVar.currency"
 msgstr "The submission fee currency code."

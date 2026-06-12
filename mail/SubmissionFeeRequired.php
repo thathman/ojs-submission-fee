@@ -42,7 +42,7 @@ class SubmissionFeeRequired extends Mailable
 
         $this->addData([
             'submissionTitle' => $title,
-            'submissionFeeAmount' => $helper->formattedAmount($context),
+            'submissionFeeAmount' => $helper->displayAmount($context),
             'submissionFeeCurrency' => $helper->currency($context),
             'submissionFeePayUrl' => $helper->payUrl($submission, $context),
         ]);

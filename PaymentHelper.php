@@ -46,6 +46,31 @@ class PaymentHelper
         return number_format($this->amount($context), 2);
     }
 
+    /**
+     * Common currency symbols for display. ISO codes are for machines; readers
+     * expect "₦10,000", not "10000 NGN".
+     */
+    public const CURRENCY_SYMBOLS = [
+        'NGN' => '₦', 'USD' => '$', 'EUR' => '€', 'GBP' => '£', 'JPY' => '¥',
+        'CNY' => '¥', 'INR' => '₹', 'ZAR' => 'R', 'GHS' => 'GH₵', 'KES' => 'KSh',
+        'CAD' => 'CA$', 'AUD' => 'A$', 'NZD' => 'NZ$', 'BRL' => 'R$', 'KRW' => '₩',
+    ];
+
+    /**
+     * Amount + currency for humans: "₦10,000" (symbol, thousands-separated,
+     * decimals only when the amount has them). Falls back to "XYZ 10,000" for
+     * currencies without a known symbol.
+     */
+    public function displayAmount(Context $context): string
+    {
+        $amount = $this->amount($context);
+        $code = strtoupper(trim($this->currency($context)));
+        $decimals = fmod($amount, 1.0) != 0.0 ? 2 : 0;
+        $number = number_format($amount, $decimals);
+        $symbol = self::CURRENCY_SYMBOLS[$code] ?? null;
+        return $symbol !== null ? $symbol . $number : trim($code . ' ' . $number);
+    }
+
     public function currency(Context $context): string
     {
         // Reuse the journal's configured payment currency.

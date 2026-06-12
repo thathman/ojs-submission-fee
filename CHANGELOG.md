@@ -3,6 +3,22 @@
 All notable changes to `submissionFee` are documented in this file.
 This project adheres to OJS plugin versioning (`major.minor.revision.build`).
 
+## [1.4.0.0] - 2026-06-12
+
+### Fixed
+- **Mailable emails never sent.** A plugin copied into `plugins/` (rather than
+  installed through the plugin gallery) never gets its `emailTemplates.xml`
+  loaded, so the `SUBMISSION_FEE_REQUIRED` template had no default
+  subject/body. The plugin now installs its email templates automatically on
+  first load (idempotent; existing customisations are preserved).
+
+### Changed
+- **Human currency display.** Amounts now render with the currency symbol —
+  "₦10,000" instead of "10,000.00 NGN" — in the wizard/start/confirmation
+  notices and in the fee-required email. Symbols are mapped for common
+  currencies (₦, $, €, £, ¥, ₹, R, GH₵, KSh, …); unknown codes fall back to
+  "CODE 10,000". Decimals are shown only when the amount has them.
+
 ## [1.3.1.0] - 2026-06-11
 
 Versioning note: from this release the scheme is
