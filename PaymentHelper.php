@@ -94,6 +94,36 @@ class PaymentHelper
     }
 
     /**
+     * True when an un-denied fee-waiver request on this submission should
+     * release the submission-fee gate.
+     *
+     * The Request Waiver plugin writes `waiverRequested` (the fee type) and
+     * `waiverStatus` (pending/approved/denied) onto the submission. We read
+     * those data fields directly so this plugin keeps no hard dependency on
+     * the waiver plugin. A request releases the gate while it is pending or
+     * approved; a denied request re-imposes the fee (the author is emailed a
+     * payment link). A publication-fee waiver never releases the submission
+     * fee. Legacy requests with no status are treated as pending (released).
+     */
+    public function waiverReleases(Submission $submission): bool
+    {
+        $requested = (string) $submission->getData('waiverRequested');
+        if ($requested === '' || $requested === 'publication') {
+            return false;
+        }
+        return (string) $submission->getData('waiverStatus') !== 'denied';
+    }
+
+    /**
+     * Whether the fee gate is satisfied for this submission: either a completed
+     * payment exists, or an un-denied waiver request releases it.
+     */
+    public function gateSatisfied(Submission $submission, Context $context): bool
+    {
+        return $this->hasPaid($submission, $context) || $this->waiverReleases($submission);
+    }
+
+    /**
      * Resolve a notice text setting, falling back to the locale default when
      * the journal has not customised it.
      */

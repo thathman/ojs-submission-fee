@@ -3,6 +3,18 @@
 All notable changes to `submissionFee` are documented in this file.
 This project adheres to OJS plugin versioning (`major.minor.revision.build`).
 
+## [1.4.0.1] - 2026-06-14
+
+### Fixed
+- **Honour fee-waiver requests.** The hard-block gate (and the wizard notice,
+  dedicated payment step, and hold-until-paid queueing) now treat an un-denied
+  waiver request as satisfying the fee, via a new `PaymentHelper::gateSatisfied()`
+  / `waiverReleases()` that reads `waiverRequested` / `waiverStatus` from the
+  submission (written by the Request Waiver plugin). Previously a requested
+  waiver still blocked the author from completing the submission. A *declined*
+  waiver re-imposes the fee. No hard dependency on the waiver plugin — the fields
+  are read directly, so it is a no-op when that plugin is absent.
+
 ## [1.4.0.0] - 2026-06-12
 
 ### Fixed

@@ -102,7 +102,7 @@ class SubmissionFeePlugin extends GenericPlugin
                 return;
             }
             $helper = new PaymentHelper($this);
-            if (!$helper->feeEnabled($event->context) || $helper->hasPaid($event->submission, $event->context)) {
+            if (!$helper->feeEnabled($event->context) || $helper->gateSatisfied($event->submission, $event->context)) {
                 return;
             }
             $helper->queueForSubmission($event->submission, $event->context);
@@ -136,7 +136,7 @@ class SubmissionFeePlugin extends GenericPlugin
         }
 
         $helper = new PaymentHelper($this);
-        if (!$helper->feeEnabled($context) || $helper->hasPaid($submission, $context)) {
+        if (!$helper->feeEnabled($context) || $helper->gateSatisfied($submission, $context)) {
             return Hook::CONTINUE;
         }
 
@@ -191,7 +191,7 @@ class SubmissionFeePlugin extends GenericPlugin
         }
 
         $helper = new PaymentHelper($this);
-        if (!$helper->feeEnabled($context) || $helper->hasPaid($submission, $context)) {
+        if (!$helper->feeEnabled($context) || $helper->gateSatisfied($submission, $context)) {
             return '';
         }
 
@@ -321,7 +321,7 @@ class SubmissionFeePlugin extends GenericPlugin
             return;
         }
         $helper = new PaymentHelper($this);
-        if (!$helper->feeEnabled($context) || $helper->hasPaid($submission, $context)) {
+        if (!$helper->feeEnabled($context) || $helper->gateSatisfied($submission, $context)) {
             return;
         }
 
